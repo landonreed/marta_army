@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<html>
+<head>
+	<title>ARC Bike Counts</title>
+	<script src="bower_components/jquery/dist/jquery.min.js"></script>
+	<script src="bower_components/tabletop/src/tabletop.js"></script>
+	<script src="bower_components/sheetsee/js/sheetsee.js"></script>
+	<link rel='stylesheet' type='text/css' href='http://api.tiles.mapbox.com/mapbox.js/v1.0.0/mapbox.css'  />
+	<style type="text/css">
+		#map, #shapesmap {max-width: 800px; height: 500px;}
+	    .leaflet-popup-content li {list-style:none;}
+	    .leaflet-popup-content {width: 102px;}
+	    .leaflet-popup-content img {width: 100px;}
+	    a {border: none;}
+	</style>
+</head>
+<body>
+<p><em><a href="https://docs.google.com/spreadsheets/d/19p3MTi1qvZl4bC7jk3ARZNPLCSHb2Cq4dyIoXcK4NeU/edit" target="_blank">spreadsheet</a></em><p>
+<div id="map"></div>
+<script type="text/javascript">
+	// https://docs.google.com/spreadsheets/d/1eKo4ssv5EKQRS25qfeXQqIJOjoiJ_-Cg1krMylsEIdI/edit?usp=sharing
+	document.addEventListener('DOMContentLoaded', function() {
+        var URL = "19p3MTi1qvZl4bC7jk3ARZNPLCSHb2Cq4dyIoXcK4NeU"
+        Tabletop.init( { key: URL, callback: showInfo, simpleSheet: true } )
+        // Tabletop.init( { key: URL2, callback: shapesMap, simpleSheet: true } )
+      })
+      function showInfo(data) {
+      	console.log(data);
+        // var optionsJSON = ["Description", "Technology", "CntIinterval1"]
+        // var template = "<ul>"
+        //              + "<li>{{Technology}}</li>"
+        //              + "<li>Count = {{CntIinterval1}}</li>"
+        //              + "<li><h4>{{Description}}</h4></li></ul>"
+        var geoJSON = Sheetsee.createGeoJSON(data)
+        console.log(geoJSON);
+        // pk.eyJ1IjoiYXRscmVnaW9uYWwiLCJhIjoiQmZ6d2tyMCJ9.oENm3NSf--qHrimdm9Vvdw
+        var map = Sheetsee.loadMap("map")
+        Sheetsee.addTileLayer(map, 'atlregional.n6ond46o');
+        Sheetsee.addMarkerLayer(geoJSON, map)
+      }
+</script>
+</body>
+
+</html>
