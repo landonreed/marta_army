@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <html>
 <head>
-	<title>ARC Bike Counts</title>
+	<title>MARTA Army!</title>
 	<script src="bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="bower_components/tabletop/src/tabletop.js"></script>
 	<script src="bower_components/sheetsee/js/sheetsee.js"></script>
@@ -34,7 +34,6 @@
         //              + "<li><h4>{{Description}}</h4></li></ul>"
         var geoJSON = Sheetsee.createGeoJSON(data)
         console.log(geoJSON);
-        // pk.eyJ1IjoiYXRscmVnaW9uYWwiLCJhIjoiQmZ6d2tyMCJ9.oENm3NSf--qHrimdm9Vvdw
         var map = Sheetsee.loadMap("map")
         Sheetsee.addTileLayer(map, 'atlregional.n6ond46o');
         Sheetsee.addMarkerLayer(geoJSON, map)
