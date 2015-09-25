@@ -5,39 +5,190 @@
 	<title>MARTA Army!</title>
 	<script src="bower_components/jquery/dist/jquery.min.js"></script>
 	<script src="bower_components/tabletop/src/tabletop.js"></script>
-	<script src="bower_components/sheetsee/js/sheetsee.js"></script>
-	<link rel='stylesheet' type='text/css' href='http://api.tiles.mapbox.com/mapbox.js/v1.0.0/mapbox.css'  />
+	<!-- <script src="bower_components/sheetsee/js/sheetsee.js"></script> -->
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/js/bootstrap.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/d3/3.5.6/d3.min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
+  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.10.6/moment.min.js"></script>
+	<script src='https://api.mapbox.com/mapbox.js/v2.2.2/mapbox.js'></script>
+<link href='https://api.mapbox.com/mapbox.js/v2.2.2/mapbox.css' rel='stylesheet' />
+  <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.0.0-alpha/css/bootstrap.css">
 	<style type="text/css">
-		#map, #shapesmap {max-width: 800px; height: 500px;}
-	    .leaflet-popup-content li {list-style:none;}
-	    .leaflet-popup-content {width: 102px;}
-	    .leaflet-popup-content img {width: 100px;}
-	    a {border: none;}
+		body {
+            padding: 0;
+            margin: 0;
+        }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
 	</style>
 </head>
 <body>
-<p><em><a href="https://docs.google.com/spreadsheets/d/19p3MTi1qvZl4bC7jk3ARZNPLCSHb2Cq4dyIoXcK4NeU/edit" target="_blank">spreadsheet</a></em><p>
-<div id="map"></div>
+<!-- <p><em><a href="https://docs.google.com/spreadsheets/d/19p3MTi1qvZl4bC7jk3ARZNPLCSHb2Cq4dyIoXcK4NeU/edit" target="_blank">spreadsheet</a></em><p> -->
+<div style="z-index:1000; position:absolute; top:10px; right:10px" class="pull-right">
+  <button class="btn btn-primary" id="get-stops" >Get nearby stops</button>
+  <button class="btn btn-secondary" id="show-army-stops" style="z-index:1000; ">Show managed stops</button>
+  <button class="btn btn-primary" id="refresh-data" style="z-index:1000; ">Refresh</button>
+</div>
+<div id="map">
+</div>
+
 <script type="text/javascript">
 	// https://docs.google.com/spreadsheets/d/1eKo4ssv5EKQRS25qfeXQqIJOjoiJ_-Cg1krMylsEIdI/edit?usp=sharing
+  // https://docs.google.com/spreadsheets/d/1D98oNCYX4xaxopDcqF2JVQqi0iDdAuOS7EdBwqBcCsE/pubhtml
+  
+  
+  // Provide your access token
+  L.mapbox.accessToken = 'pk.eyJ1IjoiYXRscmVnaW9uYWwiLCJhIjoiQmZ6d2tyMCJ9.oENm3NSf--qHrimdm9Vvdw';
+  // Create a map in the div #map
+  var map = L.mapbox.map('map', 'mapbox.streets')
+    .setView([33.7615242074253, -84.38117980957031], 15);
+  var nearbyStops = [];
+  var tabletopData;
+  var managedStops = [];
+  $('.adopt-stop').click(function(){
+    // https://docs.google.com/forms/d/1VBj97N-CwZNI288k1Kh4esDYbmglkpm9Ds7g2dXuPIM/viewform?entry.502708003=a&entry.1973423694=a&entry.1701108126=a&entry.2070891298=a&entry.1780741727=a
+    console.log(this.id)
+  })
+  $('#refresh-data').click(function(){
+    var URL = "1D98oNCYX4xaxopDcqF2JVQqi0iDdAuOS7EdBwqBcCsE"
+    Tabletop.init( { key: URL, callback: showInfo, simpleSheet: true } )
+  });
+  $('#show-army-stops').click(function(){
+    if (nearbyStops.length > 0){
+      for (var i = 0; i < nearbyStops.length; i++) {
+        map.removeLayer(nearbyStops[i])
+      };
+      nearbyStops = [];
+    }
+
+    $.each(tabletopData, function(i, stop){
+      console.log(stop)
+      var marker = L.marker([stop.lat, stop.lon]).addTo(map);
+      var popupContent = '';
+      $.each(stop, function(key, val){
+        // console.log(key)
+        // console.log(val)
+        popupContent += '<strong>' + key + '</strong>: ' + val + '<br/>'; 
+      });
+      marker.bindPopup(popupContent);
+      var color = stop.status === 'error' ? '#ff8888' : '#88ff88';
+      marker.setIcon(L.mapbox.marker.icon({
+                    'marker-color': color,
+                    'marker-size': 'medium'
+                }))
+      managedStops.push(marker);
+    });
+    var group = new L.featureGroup(managedStops);
+
+    map.fitBounds(group.getBounds());
+  })
+  $('#get-stops').click(function(){
+    if (nearbyStops.length > 0){
+      for (var i = 0; i < nearbyStops.length; i++) {
+        map.removeLayer(nearbyStops[i])
+      };
+      nearbyStops = [];
+    }
+    if (managedStops.length > 0){
+      for (var i = 0; i < managedStops.length; i++) {
+        map.removeLayer(managedStops[i])
+      };
+      managedStops = [];
+    }
+    var latlng = map.getCenter();
+    var lat = latlng.lat;
+    var lng = latlng.lng;
+    console.log(lng)
+    var url = 'http://atlanta.onebusaway.org/api/api/where/stops-for-location.json?key=TEST&lat='+lat+'&lon=' + lng;
+    console.log(url)
+    $.ajax({
+      url: url,
+      dataType: 'jsonp',
+      success: function(json){
+        // var arrivals = json.data.entry.arrivalsAndDepartures;
+        console.log(json.data);
+        var routeMap = d3.nest()
+          .key(function(d) { return d.id; })
+          .map(json.data.references.routes);
+        console.log(routeMap);
+        var stops = json.data.list;
+        for (var i = 0; i < stops.length; i++) {
+          console.log(stops[i])
+          var marker = L.marker([stops[i].lat, stops[i].lon]).addTo(map);
+          var popupContent = '';
+          $.each(stops[i], function(key, val){
+            // console.log(key)
+            // console.log(val)
+            if (key === 'routeIds'){
+              console.log(val)
+              // routeMap[val]
+              var routeText = [];
+              $.each(val, function(i, routeId){
+                routeText.push(routeMap[routeId][0].shortName);
+              })
+              popupContent += '<strong>' + key + '</strong>: ' + routeText + '<br/>'; 
+            }
+            else{
+              popupContent += '<strong>' + key + '</strong>: ' + val + '<br/>'; 
+            }
+          });
+          var color = '#888';
+          var found = tabletopData.some(function (el) {
+            return el.id === stops[i].id;
+          });
+          if (found){
+            console.log(stops[i].id + ' was found!');
+            color = '#ff8888';
+            popupContent += '<br/><h4>This stop has already been adopted!</h4>'
+          }
+          else{
+            // Add adopt a stop button
+            popupContent += '<br/><a style="color:white" href="https://docs.google.com/forms/d/1VBj97N-CwZNI288k1Kh4esDYbmglkpm9Ds7g2dXuPIM/viewform?entry.502708003='+stops[i].id+'&entry.1973423694='+stops[i].name+'&entry.1701108126='+stops[i].lat+'&entry.2070891298='+stops[i].lon+'&entry.51699223=new&entry.586710360='+moment().format('YYYY-MM-DD+HH:mm')+'" target="_blank" id="adopt-'+stops[i].id+'" class="adopt-stop btn text-center btn-sm btn-success" role="button">Adopt this stop!</a>';
+          }
+          
+          marker.bindPopup(popupContent);
+          
+          marker.setIcon(L.mapbox.marker.icon({
+            'marker-color': color,
+          }));
+          nearbyStops.push(marker);
+        };
+      }
+    })
+
+  })
+
 	document.addEventListener('DOMContentLoaded', function() {
-        var URL = "19p3MTi1qvZl4bC7jk3ARZNPLCSHb2Cq4dyIoXcK4NeU"
+        // Geolocation
+        if ("geolocation" in navigator) {
+          /* geolocation is available */
+          console.log('geolocation');
+          geolocationBool = true;
+          navigator.geolocation.getCurrentPosition(function(position) {
+            lat = position.coords.latitude;
+            lon = position.coords.longitude;
+            console.log([position.coords.latitude, position.coords.longitude]);
+          });
+        } else {
+          /* geolocation IS NOT available */
+        }
+        var URL = "1D98oNCYX4xaxopDcqF2JVQqi0iDdAuOS7EdBwqBcCsE"
         Tabletop.init( { key: URL, callback: showInfo, simpleSheet: true } )
         // Tabletop.init( { key: URL2, callback: shapesMap, simpleSheet: true } )
       })
-      function showInfo(data) {
-      	console.log(data);
-        // var optionsJSON = ["Description", "Technology", "CntIinterval1"]
-        // var template = "<ul>"
-        //              + "<li>{{Technology}}</li>"
-        //              + "<li>Count = {{CntIinterval1}}</li>"
-        //              + "<li><h4>{{Description}}</h4></li></ul>"
-        var geoJSON = Sheetsee.createGeoJSON(data)
-        console.log(geoJSON);
-        var map = Sheetsee.loadMap("map")
-        Sheetsee.addTileLayer(map, 'atlregional.n6ond46o');
-        Sheetsee.addMarkerLayer(geoJSON, map)
-      }
+  function showInfo(data) {
+  	console.log(data);
+    tabletopData = data;
+    
+      
+  }
+      serialize = function(obj) {
+  var str = [];
+  for(var p in obj)
+    if (obj.hasOwnProperty(p)) {
+      str.push(encodeURIComponent(p) + "=" + obj[p]);
+    }
+  return str.join("&");
+};
 </script>
 </body>
 
